@@ -39,12 +39,32 @@ print(f"The data frame has {len(df)} entries after removing single interaction s
 df['user'] = df.groupby('start')['user'].transform(
     lambda x: x if x.iloc[-1] == 'student' else x.iloc[-1].lower()
 )
+# Update all user information of shared ip_address
+df['user'] = df.groupby('ip_address')['user'].transform(
+    lambda x: x[x.str.contains('@', na=False)].iloc[0] if (x.str.contains('@', na=False)).any() else x
+)
 
-print(f"The data frame has {len(df)} entries before double credit removal")
-print(df.head(50))
+# Replace all student users with ip_address
+df['user'] = df.groupby('ip_address')['user'].transform(
+    lambda x: x.iloc[0] if ~(x.str.contains('@', na=False)).any() else x
+)
+
+# Anonymize Users
+df['user'] = df.groupby('user').ngroup()
+
+# Define the patterns
+problem_type_pattern = r"\/([^\/]+)\.pg$"
+problem_number_pattern = r"/S([0-9]+)E[0-9]+/"
+
+# Extract the problem type and problem number using str.extract
+df['problem_type'] = df['page'].str.extract(problem_type_pattern)[0]
+df['problem_number'] = df['page'].str.extract(problem_number_pattern)[0].astype(int)
+df = df.drop(columns=['page'])
+
+#print(f"The data frame has {len(df)} entries before double credit removal")
 
 # How many credit requests are there 
-print(f" There are {(df['problem_status'] == 'creditRequest').sum()} credit requests")
+#print(f" There are {(df['problem_status'] == 'creditRequest').sum()} credit requests")
 
 # Remove double credit requests
 """
@@ -52,17 +72,23 @@ The lambda function filters the problem_status column for only the rows that con
 selects the first row (occurence) using the .index[0] . After this the .loc() function selects all rows 
 in each group up to this first occurence. If the group contains no 'creditRequest' return the group unchanged.
 """
-
 df = df.groupby(['start', 'seed'], group_keys=False).apply(
     lambda group: group.loc[:group[group['problem_status'] == 'creditRequest'].index[0]]   
     if (group['problem_status'] == 'creditRequest').any() 
     else group
 )
 
-print(f"The data frame has {len(df)} entries after double credit removal")
+#print(f"The data frame has {len(df)} entries after double credit removal")
+df = df.drop(columns = ['ip_address'])
+new_order = ["user", "start", "duration", "seed", 'problem_number', "problem_type", "problem_status", "response"]
+df = df[new_order]
+df = df.sort_values(by=['user', 'start', 'duration'], ascending=[True, True, True])
+df = df.reset_index(drop=True)
 
+#print(df.head(50))
 
-
+# Total number of unique users 
+print(f"The total number of unique users is {df['user'].nunique()}")
 
 
 
