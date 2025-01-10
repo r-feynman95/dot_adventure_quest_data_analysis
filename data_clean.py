@@ -11,26 +11,17 @@ df = pd.read_csv("interactions.log",
                  sep = ", "             # .log is not proper csv instead ", "
                  )
 
-print(df.head(5)) # Print out the first 5 lines of the dataframe
-print(df.dtypes)
-# Find unique sessions
-unique_sessions = df['start'].unique()
+# Total number of .log unique sessions 
+total_unique_sessions = df['start'].unique()
+print(f"There were {len(total_unique_sessions)} unique sessions")
 
-# Print the count and unique values
-print(f"There were {len(unique_sessions)} unique sessions")
-
-# Remove OpenLab IP Address 66.39.77.43
-df = df[df['ip_address'] != '66.39.77.43']
+df = df[df['ip_address'] != '66.39.77.43']                                  # remove OpenLab IP Address 66.39.77.43
 df['response'] = df['response'].replace('"', np.nan)                        # replace empty response with NAN
-df['response'] = df['response'].str.replace('^\"|\"$', '', regex=True)      # Remove quotes surrounding response
+df['response'] = df['response'].str.replace('^\"|\"$', '', regex=True)      # remove quotes surrounding response
 
-print(df.head(5)) # Print out the first 5 lines of the dataframe
-
-# Find unique sessions
-unique_sessions = df['start'].unique()
-
-# Print the count and unique values
-print(f"There were {len(unique_sessions)} unique sessions")
+# Total number of student unique sessions
+student_all_unique_sessions = df['start'].unique()
+print(f"There were {len(student_all_unique_sessions)} unique sessions")
 
 # Print the number of interaction in each session
 interactions = df.groupby('start').size()
@@ -38,8 +29,40 @@ print(interactions)
 
 # Filter out sessions that end after start 
 df = df[df['start'].isin(interactions[interactions > 1].index)]
-unique_sessions = df['start'].unique()
+student_analysis_unique_sessions = df['start'].unique()
 
-# Print the count and unique values
-print(f"There were {len(unique_sessions)} unique sessions")
-print(f"The data frame has {len(df)} entries")
+# Total number of unique session longer than 1 interaction
+print(f"There were {len(student_analysis_unique_sessions)} unique sessions")
+print(f"The data frame has {len(df)} entries after removing single interaction sessions")
+
+# Replace all user information by lowercased email if availible
+df['user'] = df.groupby('start')['user'].transform(
+    lambda x: x if x.iloc[-1] == 'student' else x.iloc[-1].lower()
+)
+
+print(f"The data frame has {len(df)} entries before double credit removal")
+print(df.head(50))
+
+# How many credit requests are there 
+print(f" There are {(df['problem_status'] == 'creditRequest').sum()} credit requests")
+
+# Remove double credit requests
+"""
+The lambda function filters the problem_status column for only the rows that contain credit request then
+selects the first row (occurence) using the .index[0] . After this the .loc() function selects all rows 
+in each group up to this first occurence. If the group contains no 'creditRequest' return the group unchanged.
+"""
+
+df = df.groupby(['start', 'seed'], group_keys=False).apply(
+    lambda group: group.loc[:group[group['problem_status'] == 'creditRequest'].index[0]]   
+    if (group['problem_status'] == 'creditRequest').any() 
+    else group
+)
+
+print(f"The data frame has {len(df)} entries after double credit removal")
+
+
+
+
+
+
