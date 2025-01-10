@@ -1,0 +1,144 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<div class="row"> <!-- Add a row container -->
+    <div class="col-12 col-md-6 col-lg-4"> <!-- Adjusted to use col-md-6 to fit two cards side-by-side on medium screens and larger -->
+        <div class="card card-style mb-2"> <!-- Simple bootstrap card-->
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="income_vs_expense"></canvas> <!-- Contains a canvas as chart.js requires a canvas to be drawn-->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-4"> <!-- Adjusted to use col-md-6 to fit two cards side-by-side on medium screens and larger -->
+        <div class="card card-style mb-2"> <!-- Simple bootstrap card-->
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="expenses_over_time"></canvas> <!-- Contains a canvas as chart.js requires a canvas to be drawn-->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% block javascript %}
+<script>
+    let income_vs_expenses = JSON.parse({{ income_vs_expenses | tojson }});
+  
+    let income_vs_expense_chart = new Chart(income_vs_expense, {
+        type: 'pie',
+        data: {
+        labels: ['expense', 'income'],
+            datasets: [{
+                label: "Income Vs Expenses",
+                data: income_vs_expenses,
+                backgroundColor: ['#5DA5DA ', '#FAA43A', '#60BD68',
+                    '#B276B2', '#E16851', '#FB8267'],
+
+                borderWidth: 1,
+                hoverBorderColor: "black",
+                hoverBorderWidth: 2,
+                hoverBackgroundColor: 'rgba(154, 245, 140)',
+                pointHoverRadius: 5
+            }],
+        },
+        options: {
+                title: {
+                    display: true,
+                        text: "Income Vs Expenses",
+                            fontSize: 20,
+                },
+                legend: {
+                    position: "right",
+                        labels: {
+                        fontColor: "gray"
+                    },
+                    display: true,
+                },
+
+                elements: {
+                    hitRadius: 3,
+                },
+
+                scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                            min: 0
+                            }
+                                }
+                            }
+                
+                        }
+    });
+
+    let over_time_expenditure = JSON.parse({{ over_time_expenditure | tojson }});
+    labels = JSON.parse({{ dates_label  | tojson}})
+
+    new Chart(document.getElementById("expenses_over_time"), {
+        type: "line",
+        data:
+        {
+            labels: labels,
+            datasets: [{
+                label: "Expenditure Over Time",
+                
+                data: over_time_expenditure,
+                fill: false,
+                borderColor: "rgb(75, 192, 192)",
+                lineTension: 0.1
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Dates'
+                },
+                ticks: {
+                    autoSkip: true,
+                    maxRotation: 45,
+                    minRotation: 0
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Expenditure'
+                },
+                beginAtZero: true
+            }
+        },
+        layout: {
+            padding: {
+                top: 10,
+                bottom: 10,
+                left: 10,
+                right: 10
+            }
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                enabled: true,
+                mode: 'index',
+                intersect: false
+            }
+        }
+    }
+    });
+</script>  
+
+{% endblock %}
+
+
+{% endblock %}
