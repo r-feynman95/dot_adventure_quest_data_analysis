@@ -2,6 +2,7 @@ from application import app, db
 from flask import render_template, flash, redirect, url_for, get_flashed_messages
 from application.form import UserInputForm
 from application.models import IncomeExpenses
+from application.upload_form import logUploadForm
 import json
 
 @app.route("/")
@@ -61,5 +62,6 @@ def dashboard():
 
 @app.route("/upload")
 def upload():
-    
-    return redirect(url_for('index'))
+    upload_form = logUploadForm()
+    #return redirect(url_for('index'))
+    return render_template('upload.html', form = upload_form)
