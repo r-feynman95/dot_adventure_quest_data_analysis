@@ -1,5 +1,16 @@
 {% extends 'layout.html' %}
 {% block content %}
 
+<form method = "POST">
+    {{ form.csrf_token() }}
+    <div class = "form-group">
+        {{ form.log.label(class="form-label") }}
+        {{ form.log(class = "form-control-file ") }}
+    </div>
+    
+    <div class="form-group border-bottom pb-3">
+        {{ form.submit(class="btn btn-outline-info") }}
+    </div>
+</form>
 
 {% endblock %}
