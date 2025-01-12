@@ -64,4 +64,7 @@ def dashboard():
 def upload():
     upload_form = logUploadForm()
     #return redirect(url_for('index'))
-    return render_template('upload.html', form = upload_form)
+    return render_template('upload.html', 
+                           title = 'Upload', 
+                           # Need to add on validation return to index and flash success.
+                           form = upload_form)
