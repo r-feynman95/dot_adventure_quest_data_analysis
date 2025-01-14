@@ -43,43 +43,46 @@ class LogFileProcessor:
 
         # Session Interactions
         logger.info("Adding distribution of all interactions")
-        interactions_distribution = self.df.groupby('start').size()
-        self.meta_info['interactions_distribution'] = interactions_distribution
+        interactions = self.df.groupby('start').size()
+        self.meta_info['interactions_distribution'] = interactions
         
-
         # Filter out sessions that end after start 
-        df = df[df['start'].isin(interactions[interactions > 1].index)]
-        student_analysis_unique_sessions = df['start'].unique()
+        self.df = self.df[self.df['start'].isin(interactions[interactions > 1].index)]
+        logger.info(f"There were {llen(student_analysis_unique_sessions)} unique sessions")
+        student_analysis_unique_sessions = self.df['start'].unique()
+        self.meta_info['student_analysis_unique_sessions'] = student_analysis_unique_sessions
+        logger.info(f"There were {len(student_analysis_unique_sessions)} unique sessions")
+        logger.info(f"The data frame has {len(self.df)} entries after cleaning")
 
-    # Total number of unique session longer than 1 interaction
-    print(f"There were {len(student_analysis_unique_sessions)} unique sessions")
-    print(f"The data frame has {len(df)} entries after removing single interaction sessions")
 
-    # Replace all user information by lowercased email if availible
-    df['user'] = df.groupby('start')['user'].transform(
-        lambda x: x if x.iloc[-1] == 'student' else x.iloc[-1].lower()
-    )
-    # Update all user information of shared ip_address
-    df['user'] = df.groupby('ip_address')['user'].transform(
-        lambda x: x[x.str.contains('@', na=False)].iloc[0] if (x.str.contains('@', na=False)).any() else x
-    )
+    def _anonymize_users(self):
 
-    # Replace all student users with ip_address
-    df['user'] = df.groupby('ip_address')['user'].transform(
-        lambda x: x.iloc[0] if ~(x.str.contains('@', na=False)).any() else x
-    )
+        # Replace all user information by lowercased email if availible
+        self.df['user'] = self.df.groupby('start')['user'].transform(
+            lambda x: x if x.iloc[-1] == 'student' else x.iloc[-1].lower()
+        )
+        # Update all user information of shared ip_address
+        self.df['user'] = self.df.groupby('ip_address')['user'].transform(
+            lambda x: x[x.str.contains('@', na=False)].iloc[0] if (x.str.contains('@', na=False)).any() else x
+        )
 
-    # Anonymize Users
-    df['user'] = df.groupby('user').ngroup()
+        # Replace all student users with ip_address
+        self.df['user'] = self.df.groupby('ip_address')['user'].transform(
+            lambda x: x.iloc[0] if ~(x.str.contains('@', na=False)).any() else x
+        )
 
-    # Define the patterns
-    problem_type_pattern = r"\/([^\/]+)\.pg$"
-    problem_number_pattern = r"/S([0-9]+)E[0-9]+/"
+        # Anonymize Users
+        self.df['user'] = self.df.groupby('user').ngroup()
 
-    # Extract the problem type and problem number using str.extract
-    df['problem_type'] = df['page'].str.extract(problem_type_pattern)[0]
-    df['problem_number'] = df['page'].str.extract(problem_number_pattern)[0].astype(int)
-    df = df.drop(columns=['page'])
+    def _extract_problem_data(self):
+        # Define the patterns
+        problem_type_pattern = r"\/([^\/]+)\.pg$"
+        problem_number_pattern = r"/S([0-9]+)E[0-9]+/"
+
+        # Extract the problem type and problem number using str.extract
+        self.df['problem_type'] = self.df['page'].str.extract(problem_type_pattern)[0]
+        self.df['problem_number'] = self.df['page'].str.extract(problem_number_pattern)[0].astype(int)
+        self.df = self.df.drop(columns=['page'])
 
     #print(f"The data frame has {len(df)} entries before double credit removal")
 
