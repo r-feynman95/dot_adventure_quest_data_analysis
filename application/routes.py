@@ -64,6 +64,12 @@ def dashboard():
 def upload():
     upload_form = logUploadForm()
     #return redirect(url_for('index'))
+    if form.validate_on_submit():                                       # Returns true if all validators (DataRequired checks) are true
+        flash("Successful Upload", 'success')                            # flash is a flask global function that sens one-time message
+
+        return redirect(url_for('index'))                               # If form valid, return user to index page
+
+
     return render_template('upload.html', 
                            title = 'Upload', 
                            # Need to add on validation return to index and flash success.
