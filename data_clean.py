@@ -33,25 +33,26 @@ class LogFileProcessor:
         # Basic data cleaning
         logger.info("Perfoming initial cleaning")
         self.df = self.df[self.df['ip_address'] != '66.39.77.43']  # Remove admin ip interaction
-        self.df['response'] = self.df['response'].replace('"', np.nan)                        
+        self.df['response'] = self.df['response'].replace('"', np.nan)  # Remove internal quotes in responses                        
         self.df['response'] = self.df['response'].str.replace('^\"|\"$', '', regex=True)             
 
         # Unique Sessions analysis
         total_unique_sessions = len(self.df['start'].unique())
-        self.meta_info['total_unique_sessions'] = len(total_unique_sessions)
-        logger.info(f"There were {len(total_unique_sessions)} unique sessions")
+        self.meta_info['total_unique_sessions'] = total_unique_sessions
+        logger.info(f"There were {total_unique_sessions} unique sessions")
 
         # Session Interactions
-        logger.info("Adding distribution of all interactions")
+        logger.info("Adding distribution of all interactions to meta_info")
         interactions = self.df.groupby('start').size()
         self.meta_info['interactions_distribution'] = interactions
         
         # Filter out sessions that end after start 
         self.df = self.df[self.df['start'].isin(interactions[interactions > 1].index)]
-        logger.info(f"There were {llen(student_analysis_unique_sessions)} unique sessions")
-        student_analysis_unique_sessions = self.df['start'].unique()
+        student_analysis_unique_sessions = len(self.df['start'].unique())
+        
         self.meta_info['student_analysis_unique_sessions'] = student_analysis_unique_sessions
-        logger.info(f"There were {len(student_analysis_unique_sessions)} unique sessions")
+
+        logger.info(f"There were {student_analysis_unique_sessions} unique student sessions")
         logger.info(f"The data frame has {len(self.df)} entries after cleaning")
 
         self._anonymize_users()
@@ -77,6 +78,8 @@ class LogFileProcessor:
         # Anonymize Users
         self.df['user'] = self.df.groupby('user').ngroup()
 
+        logger.info("Users anonymized")
+
     def _extract_problem_data(self):
         # Define the patterns
         problem_type_pattern = r"\/([^\/]+)\.pg$"
@@ -86,6 +89,8 @@ class LogFileProcessor:
         self.df['problem_type'] = self.df['page'].str.extract(problem_type_pattern)[0]
         self.df['problem_number'] = self.df['page'].str.extract(problem_number_pattern)[0].astype(int)
         self.df = self.df.drop(columns=['page'])
+
+        logger.info("Problem type and number seperated")
 
     def _remove_double_credits(self):
         """
@@ -97,13 +102,14 @@ class LogFileProcessor:
         """
         temp_size = len(self.df)
 
-        df = df.groupby(['start', 'seed'], group_keys=False).apply(
+        self.df = self.df.groupby(['start', 'seed'], group_keys=False).apply(
             lambda group: group.loc[:group[group['problem_status'] == 'creditRequest'].index[0]]   
             if (group['problem_status'] == 'creditRequest').any() 
             else group
         )
 
-        logger.info(f"The data frame is now of size {len(self.df) - temp_size}")
+        logger.info("Double Credit Requests clenaed")
+        logger.info(f"The data frame is now of size {temp_size - len(self.df)}")
 
     def _reformat(self):
         new_order = ["user", "start", "duration", "seed", 'problem_number', "problem_type", "problem_status", "response"]
